@@ -25,11 +25,29 @@ class FlaskTests(TestCase):
     def test_homepage(self):
         """Make sure homepage has correct routing information"""
 
-        with self.client:
-            response = self.client.get('/')
+        with self.client as client:
+
+            response = client.get('/')
+
             # test that the status code is a 200
+            self.assertEqual(response.status_code, 200)
+
             # test that there's a table in the response data
+            self.assertIn('<table>', response.data.decode())
+
             # test that the description for each endpoint is in the response data
+            self.assertIn('JSON data of all desserts', response.data.decode())
+            self.assertIn(
+                'Adds a new dessert to our list (returns data on the new dessert)',
+                response.data.decode())
+            self.assertIn('JSON data on a single dessert',
+                          response.data.decode())
+            self.assertIn(
+                'Update an existing dessert (returns data on the updated dessert)',
+                response.data.decode())
+            self.assertIn(
+                'Removes a dessert from our list (returns data on the deleted dessert)',
+                response.data.decode())
             # e.g. 'JSON data of all desserts' should be in the response data,
             # 'Adds a new dessert to our list' should be in the response data,
             # etc.
