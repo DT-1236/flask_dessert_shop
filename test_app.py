@@ -1,4 +1,5 @@
 from unittest import TestCase
+from flask import session
 from app import app
 from desserts import dessert_list, Dessert
 
@@ -9,6 +10,7 @@ class FlaskTests(TestCase):
 
         self.client = app.test_client()
         app.config['TESTING'] = True
+        app.config['SECRET_KEY'] = "SECRET TESTING"
 
     def tearDown(self):
         """reset the dessert_list after each test.
@@ -51,3 +53,92 @@ class FlaskTests(TestCase):
             # e.g. 'JSON data of all desserts' should be in the response data,
             # 'Adds a new dessert to our list' should be in the response data,
             # etc.
+
+    def test_get_all_desserts(self):
+        """Tests a GET to /desserts"""
+        with self.client:
+            response = self.client.get('/desserts')
+
+            # test if response code is 200
+            self.assertEqual(response.status_code, 200)
+            # test if is_json property on response is true
+            self.assertTrue(response.is_json)
+
+            # test number of objects in json attribute
+            self.assertEqual(len(response.json), 3)
+            # test one or more objects in json
+            self.assertEqual(response.json[0]['calories'], 200)
+            self.assertEqual(response.json[0]['id'], 1)
+            self.assertEqual(response.json[0]['name'], "Chocolate chip cookie")
+
+    def test_add_dessert(self):
+        with self.client:
+            response = self.client.post(
+                '/desserts',
+                json={
+                    'name': 'Chocolate Cake',
+                    'description': 'Cake made of CHOCOLATE',
+                    'calories': 1200
+                })
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.is_json)
+            self.assertIsInstance(response.json, dict)
+            self.assertEqual(
+                response.json, {
+                    "id": 4,
+                    "name": "Chocolate Cake",
+                    "description": "Cake made of CHOCOLATE",
+                    "calories": 1200
+                })
+
+    def test_get_one_dessert(self):
+        with self.client:
+            response = self.client.get('/desserts/1')
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.is_json)
+            self.assertIsInstance(response.json, dict)
+            self.assertEqual(
+                response.json, {
+                    "id": 1,
+                    "name": "Chocolate chip cookie",
+                    "description":
+                    "C is for cookie, that's good enough for me",
+                    "calories": 200
+                })
+            response = self.client.get('/desserts/100')
+            self.assertEqual(response.status_code, 404)
+            self.assertTrue(response.is_json)
+            self.assertIsInstance(response.json, str)
+            self.assertEqual(response.json, "No dessert with id 100")
+
+    def test_update_dessert(self):
+        with self.client:
+            response = self.client.patch(
+                '/desserts/1', json={'name': 'test_change'})
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.is_json)
+            self.assertIsInstance(response.json, dict)
+            self.assertEqual(response.json['name'], 'test_change')
+            self.assertEqual(response.json['calories'], 200)
+
+    def test_delete_dessert(self):
+        with self.client:
+            response = self.client.delete('/desserts/1')
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.is_json)
+            self.assertIsInstance(response.json, dict)
+            self.assertEqual(response.json['name'], 'Chocolate chip cookie')
+            self.assertEqual(response.json['calories'], 200)
+
+    def test_eat(self):
+        with self.client:
+            response = self.client.get('/desserts')
+            self.assertIsNone(session.get('total_calories'))
+            response = self.client.post('/desserts/1/eat')
+            self.assertTrue(response.is_json)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json['total_calories'], 200)
+            self.assertEqual(session['total_calories'], 200)
+
+            response = self.client.post('/desserts/1/eat')
+            self.assertEqual(session['total_calories'], 400)

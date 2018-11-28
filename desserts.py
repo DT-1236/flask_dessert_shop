@@ -39,7 +39,7 @@ class DessertList:
         new_line = '\n'
         return f'nextid = {self.next_id}\n{new_line.join([str([dessert.id, dessert.name])[1:-1] for dessert in self.desserts])}'
 
-    def add(self, name, description, calories):
+    def add(self, name: str, description: str, calories: (int, float)):
         """Add a new dessert given dessert data and append to our list"""
 
         new_dessert = Dessert(self.next_id, name, description, calories)
@@ -51,6 +51,14 @@ class DessertList:
         which will play nice with JSON"""
         # self.dessert[] => [serialize]
         return [dessert.serialize() for dessert in self.desserts]
+
+    def find(self, id):
+        """Return a dessert from the list with a matching id"""
+        try:
+            return next(
+                dessert for dessert in self.desserts if dessert.id == id)
+        except StopIteration:
+            return None
 
 
 # make a dessert list and put some desserts in it
